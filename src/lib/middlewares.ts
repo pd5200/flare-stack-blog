@@ -2,38 +2,12 @@ import { createMiddleware } from "@tanstack/react-start";
 import {
   getRequestHeader,
   getRequestHeaders,
-  setResponseHeader,
 } from "@tanstack/react-start/server";
 import type { RateLimitOptions } from "@/lib/do/rate-limiter";
-import { CACHE_CONTROL } from "@/lib/constants";
 import { getDb } from "@/lib/db";
 import { getAuth } from "@/lib/auth/auth.server";
 import { verifyTurnstileToken } from "@/lib/turnstile";
 import { serverEnv } from "@/lib/env/server.env";
-
-// ======================= Cache Control ====================== */
-// deprecated 感觉没啥用了，现在都是hono api来获取公开博客数据了，hono那里设置好缓存头就行了
-export const createCacheHeaderMiddleware = (
-  strategy: "private" | "immutable" | "swr" | "public",
-) => {
-  return createMiddleware({ type: "function" }).server(async ({ next }) => {
-    const result = await next();
-
-    // 只在客户端直接请求 Server Function 时设置 headers
-    // SSR 期间请求 Accept header 为 text/html，此时不设置 headers，让 route headers() 生效
-    // 客户端 React Query 请求 Accept header 包含 application/json
-    const accept = getRequestHeader("Accept");
-    const isClientRequest = accept?.includes("application/json");
-
-    if (isClientRequest) {
-      Object.entries(CACHE_CONTROL[strategy]).forEach(([k, v]) => {
-        setResponseHeader(k, v);
-      });
-    }
-
-    return result;
-  });
-};
 
 /* ======================= Infrastructure ====================== */
 
@@ -68,7 +42,7 @@ export const sessionMiddleware = createMiddleware({ type: "function" })
   });
 
 export const authMiddleware = createMiddleware({ type: "function" })
-  .middleware([createCacheHeaderMiddleware("private"), sessionMiddleware])
+  .middleware([sessionMiddleware])
   .server(async ({ next, context }) => {
     const session = context.session;
 
