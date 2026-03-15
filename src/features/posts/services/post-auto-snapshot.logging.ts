@@ -1,11 +1,11 @@
-import { isNotInProduction } from "@/lib/env/server.env";
+import { serverEnv } from "@/lib/env/server.env";
 
 export function logPostAutoSnapshot(
   env: Env,
   event: string,
   payload: Record<string, unknown>,
 ) {
-  if (!isNotInProduction(env)) {
+  if (serverEnv(env).ENVIRONMENT !== "dev") {
     return;
   }
 
